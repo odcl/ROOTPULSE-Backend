@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env/
+.venv/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+local_settings.py
+staticfiles/
+media/
+*.log
+
+# Environment Variables
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+*.db
+
+# RootPulse Specific
+services/**/db.sqlite3
+services/**/staticfiles/
+services/**/media/
+packages/**/*.egg-info/
+
+# Root Documents & Extractions
+RootPuls - for developer.docx
+RootPuls.xlsx
+RootPulse_workstep_dashboard.pdf
+dashboard_text.txt
+docx_text.txt
+xlsx_text.txt
