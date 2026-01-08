@@ -55,7 +55,36 @@ Utility scripts for development, database management, or maintenance tasks.
 
 ---
 
-## 2. Core Packages (`packages/`)
+## 2. High-Level Architecture Diagram
+
+Here is a visual representation of how the **RootPulse** system components interact:
+
+```mermaid
+graph TD
+    User[User / Client App] -->|HTTPS| Gateway[API Gateway (Nginx/Kong)]
+
+    subgraph "Services Layer (Microservices)"
+        Gateway -->|/auth| IAM[IAM Service]
+        Gateway -->|/catalog| Catalog[Catalog Service]
+        Gateway -->|/finance| Finance[Finance Service]
+        Gateway -->|/chat| Chat[Chat Service]
+        Gateway -->|/workflow| Workflow[Workflow Service]
+    end
+
+    subgraph "Infrastructure Layer"
+        IAM & Catalog & Finance & Chat & Workflow <-->|Async Events| Bus((Event Bus / RabbitMQ))
+        IAM --- DB_IAM[(IAM DB)]
+        Catalog --- DB_Cat[(Catalog DB)]
+        Finance --- DB_Fin[(Finance DB)]
+        Chat --- DB_Chat[(Chat DB)]
+        Workflow --- DB_WF[(Workflow DB)]
+    end
+
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px;
+    class IAM,Catalog,Finance,Chat,Workflow service;
+```
+
+## 3. Core Packages (`packages/`)
 
 ### `rootpulse-core`
 
