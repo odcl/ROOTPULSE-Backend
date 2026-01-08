@@ -59,7 +59,9 @@ Utility scripts for development, database management, or maintenance tasks.
 
 Here is a visual representation of the **RootPulse** 4-Tier Layered Architecture:
 
-![RootPulse Architecture Diagram](assets/architecture_pro.png)
+![RootPulse Architecture Diagram](assets/architecture_simple.png)
+
+> [!NOTE] > **Pro Dynamic View**: For a technical 3D isometric representation, see [Architecture Pro (3D)](assets/architecture_pro.png).
 
 ```mermaid
 graph TD
