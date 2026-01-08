@@ -59,6 +59,8 @@ Utility scripts for development, database management, or maintenance tasks.
 
 Here is a visual representation of how the **RootPulse** system components interact:
 
+![RootPulse Architecture Diagram](assets/architecture_diagram.png)
+
 ```mermaid
 graph TD
     User[User / Client App] -->|HTTPS| Gateway[API Gateway (Nginx/Kong)]
