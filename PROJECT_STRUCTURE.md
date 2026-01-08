@@ -4,6 +4,29 @@ This document provides a detailed breakdown of the `ROOTPULSE-Backend` project s
 
 ## 1. Project Root Directories
 
+### Current Directory Structure
+
+```text
+ROOTPULSE-Backend/
+├── ci/                 # Continuous Integration scripts
+├── deployment/         # Deployment configurations (Docker, K8s)
+├── gateway/            # API Gateway logic
+├── packages/           # Shared libraries
+│   └── rootpulse-core/ # Core shared utilities and models
+├── scripts/            # Project utility scripts
+├── services/           # Microservices (Domain logic)
+│   ├── catalog/        # Product inventory service
+│   ├── chat/           # Chat & Messaging service
+│   ├── finance/        # Financial transactions & wallets
+│   ├── iam/            # Identity & Access Management (User/Auth)
+│   ├── membership/     # Subscription & Tier management
+│   ├── notifications/  # Notification dispatch service
+│   └── workflow/       # Business process automation
+├── venv/               # Python virtual environment
+├── PROJECT_STRUCTURE.md # This documentation
+└── ... (other root files)
+```
+
 ### `services/`
 
 The heart of the backend architecture. This project follows a **Microservices Architecture**, where each folder inside `services` represents a standalone, independently deployable service responsible for a specific domain of the application.
