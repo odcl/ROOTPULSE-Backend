@@ -178,7 +178,40 @@ graph TD
 
 ---
 
-## 4. Other Key Files
+## 4. Design Patterns & Core Implementation
+
+To ensure a "Best-in-Class" architecture, **RootPulse** follows industry-standard distributed system patterns.
+
+### Event-Driven Architecture (EDA)
+
+Instead of services calling each other directly (which creates a mess), we use an **Asynchronous Event-Driven** approach.
+
+- **The Pattern**: Every major state change (e.g., `OrderCreated`, `PaymentSuccess`) is published to **RabbitMQ** as a "Topic".
+- **The Benefit**: Services are "Decoupled". If the Chat service goes down, the Finance service can still process payments. The Chat service will catch up on messages once it’s back online.
+
+### SAGA Pattern for Distributed Transactions
+
+Since each service has its own database, we use the SAGA pattern to ensure **Data Consistency** across the system.
+
+- **Flow**: Service A completes a task -> Publishes an event -> Service B listens and updates its DB.
+- **Resilience**: The `rootpulse-core` package includes resilience logic to handle retries and failures automatically.
+
+### Security Architecture (Zero-Trust)
+
+1.  **Authentication**: Handled by **Keycloak** (OIDC Standard).
+2.  **Authorization**: The **Kong API Gateway** verifies the JWT (JSON Web Token) before any request reaches the internal services.
+3.  **Tenant Isolation**: Databases are structured to support multi-tenancy, ensuring one customer's data never leaks to another.
+
+### Observability & Monitoring
+
+The system is built to be "Transparent":
+
+- **Tracing**: Every request is assigned a `trace_id` by the gateway, which follows the request through every microservice.
+- **Resilience**: Implementation of **Circuit Breakers** in the core package prevents a single failing service from taking down the entire system.
+
+---
+
+## 5. Other Key Files
 
 - **`RootPuls - for developer.docx` / `RootPuls.xlsx`**: Project requirements and planning documents.
 - **`RootPulse_workstep_dashboard.pdf`**: Visual documentation of workflows or UI mockups.
