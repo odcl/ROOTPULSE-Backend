@@ -1,14 +1,14 @@
+import os
 import logging
 import pybreaker
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 # Basic Circuit Breaker configuration
 # In production, this can be backed by Redis
 db_breaker = pybreaker.CircuitBreaker(
-    fail_max=5,
-    reset_timeout=60,
+    fail_max=int(os.getenv("CB_FAIL_MAX", 5)),
+    reset_timeout=int(os.getenv("CB_RESET_TIMEOUT", 60)),
     listeners=[pybreaker.LoggingBreakerListener(logger)]
 )
 

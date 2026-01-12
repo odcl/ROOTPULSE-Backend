@@ -1,15 +1,15 @@
+import os
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from django.conf import settings
 
 def setup_tracing(service_name):
     """
     Standardizes OpenTelemetry tracing across all services.
     """
-    endpoint = getattr(settings, 'OTEL_EXPORTER_OTLP_ENDPOINT', "http://localhost:4317")
+    endpoint = os.getenv('OTEL_EXPORTER_OTLP_ENDPOINT', "http://localhost:4317")
     
     resource = Resource(attributes={
         SERVICE_NAME: service_name

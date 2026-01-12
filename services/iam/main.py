@@ -48,6 +48,34 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 async def root():
     return {"message": "Welcome to RootPulse IAM Service API"}
 
+@app.get("/me/permissions")
+async def get_my_permissions(current_user: dict = Depends(get_current_user)):
+    """
+    Return the permissions and menu structure for the logged-in user.
+    """
+    # Extract roles from JWT payload (e.g., from realm_access)
+    user_roles_str = current_user.get("realm_access", {}).get("roles", [])
+    
+    # Map string roles to Role Enum (ignoring unknown roles)
+    roles = []
+    for r in user_roles_str:
+        try:
+            roles.append(Role(r))
+        except ValueError:
+            pass
+    
+    # Calculate permissions
+    permissions = get_user_permissions(roles)
+    
+    # Calculate menu
+    menu = get_user_menu(permissions)
+    
+    return {
+        "roles": user_roles_str,
+        "permissions": list(permissions),
+        "menu": menu
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
