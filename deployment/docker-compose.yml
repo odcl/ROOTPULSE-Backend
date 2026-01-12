@@ -194,6 +194,20 @@ services:
     networks:
       - rootpulse_network
 
+  analytics-service:
+    build:
+      context: ..
+      dockerfile: services/analytics/Dockerfile
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - db
+      - redis
+    networks:
+      - rootpulse_network
+
 networks:
   rootpulse_network:
     driver: bridge

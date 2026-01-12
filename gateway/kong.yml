@@ -71,6 +71,15 @@ services:
           - /notifications
         strip_path: true
 
+  # --- Analytics Service ---
+  - name: analytics-service
+    url: http://analytics-service:8000
+    routes:
+      - name: analytics-route
+        paths:
+          - /analytics
+        strip_path: true
+
   # --- Global Health ---
   - name: global-health
     url: http://iam-service:8000/health
@@ -84,6 +93,12 @@ plugins:
   - name: file-log
     config:
       path: /dev/stdout
+  - name: http-log
+    config:
+      http_endpoint: "http://analytics-service:8000/ingest"
+      method: POST
+      timeout: 1000
+      keepalive: 60000
   - name: cors
     config:
       origins: ["*"]
