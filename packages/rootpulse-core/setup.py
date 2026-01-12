@@ -13,6 +13,7 @@ setup(
         "asyncpg>=0.29.0",
         "pika>=1.3.1",  # RabbitMQ
         "redis>=5.0.1",
+        "meilisearch>=0.28.1",
         "python-dotenv>=1.0.0",
     ],
     description="Shared core library for RootPulse Microservices (FastAPI Version)",

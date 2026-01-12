@@ -91,6 +91,18 @@ services:
     networks:
       - rootpulse_network
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.3
+    environment:
+      MEILI_MASTER_KEY: master_key
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - rootpulse_network
+
 networks:
   rootpulse_network:
     driver: bridge
@@ -98,3 +110,4 @@ networks:
 volumes:
   postgres_data:
   keycloak_data:
+  meilisearch_data:
