@@ -1,3 +1,4 @@
+import phonenumbers
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List
 from datetime import date, datetime
@@ -8,15 +9,32 @@ from uuid import UUID
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=150, example="john_doe")
     email: EmailStr = Field(..., example="john@example.com")
-    phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$", example="+8801700000000")
+    phone: Optional[str] = Field(None, example="+8801700000000")
     password: str = Field(..., min_length=8, example="StrongPassword123!")
     
-    # Custom validation (Best Practice)
     @validator('username')
     def username_alphanumeric(cls, v):
         if not v.isalnum() and "_" not in v:
             raise ValueError('Username must be alphanumeric or contain underscores')
         return v
+
+    @validator('phone')
+    def validate_phone(cls, v):
+        if v is None:
+            return v
+        
+        try:
+            # Parse the number (must start with +)
+            parsed_number = phonenumbers.parse(v, None)
+            
+            if not phonenumbers.is_valid_number(parsed_number):
+                raise ValueError('Invalid phone number for the provided country code.')
+            
+            # Format to E.164 (Standard global format)
+            return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+            
+        except phonenumbers.NumberParseException:
+            raise ValueError('Phone number must start with a + and include country code (e.g., +88017...)')
 
 # --- 2. User Response Schema (Sanitized) ---
 
