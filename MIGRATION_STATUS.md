@@ -22,18 +22,17 @@ This report tracks the migration of the ROOTPULSE backend from Django (Monolith)
 
 ## 3. Microservices (`services/`)
 
-| Service           | Architecture | Migration Status | Notes                                           |
-| :---------------- | :----------- | :--------------- | :---------------------------------------------- |
-| **IAM**           | **FastAPI**  | ✅ Logic Ported  | **Cleanup Needed**: Remove legacy Django folder |
-| **Catalog**       | Django       | ❌ Not Started   | Legacy Structure Detected                       |
-| **Finance**       | Django       | ❌ Not Started   | Legacy Structure Detected                       |
-| **Membership**    | Django       | ❌ Not Started   | Legacy Structure Detected                       |
-| **Chat**          | Django       | ❌ Not Started   | Legacy Structure Detected                       |
-| **Workflow**      | Django       | ❌ Not Started   | Legacy Structure Detected                       |
-| **Notifications** | -            | ❌ Not Started   |                                                 |
+| Service           | Architecture | Migration Status  | Notes                 |
+| :---------------- | :----------- | :---------------- | :-------------------- |
+| **IAM**           | **FastAPI**  | ✅ Logic Ported   | Cleaned & Verified    |
+| **Catalog**       | **FastAPI**  | ✅ Skeleton Ready | Logic Porting Pending |
+| **Finance**       | **FastAPI**  | ✅ Skeleton Ready | Logic Porting Pending |
+| **Membership**    | **FastAPI**  | ✅ Skeleton Ready | Logic Porting Pending |
+| **Chat**          | **FastAPI**  | ✅ Skeleton Ready | Logic Porting Pending |
+| **Workflow**      | **FastAPI**  | ✅ Skeleton Ready | Logic Porting Pending |
+| **Notifications** | **FastAPI**  | ✅ Skeleton Ready | New Service Skeleton  |
 
-## Next Action: A-to-Z Cleanup
+## Next Action: Industrial Hardening
 
-1. Refactor `rootpulse-core` to remove _all_ Django imports.
-2. Delete legacy Django folders in `services/iam`.
-3. Port remaining services to FastAPI one by one.
+1. Implement core logic for each service within the new models.
+2. Set up CI/CD for multi-service builds.
