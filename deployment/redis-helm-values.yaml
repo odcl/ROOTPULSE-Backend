@@ -1,0 +1,40 @@
+# Redis Cluster Helm Values
+redis:
+  cluster:
+    enabled: true
+    slaveCount: 1
+    nodes: 6 # 3 masters + 3 slaves for HA
+
+  metrics:
+    enabled: true
+
+  # Persistence for Streams and Sessions
+  master:
+    persistence:
+      enabled: true
+      storageClass: "local-nvme"
+      size: "50Gi"
+
+  # Resource limits for "crore traffic" scale
+  resources:
+    limits:
+      cpu: "1"
+      memory: "4Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+
+# Eviction Policy for Crore Sessions
+# volatile-lru: Remove keys with an expire set using LRU algorithm
+# allkeys-lru: Remove any key using LRU algorithm
+configmap: |
+  maxmemory 3gb
+  maxmemory-policy allkeys-lru
+  lazyfree-lazy-eviction yes
+  lazyfree-lazy-expire yes
+
+# Multi-region replication placeholder (for cross-cluster sync)
+global:
+  redis:
+    replication:
+      enabled: false # Manual setup or enterprise feature usually

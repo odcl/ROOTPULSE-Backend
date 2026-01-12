@@ -1,0 +1,45 @@
+# Citus Cluster Helm Values
+citus:
+  enabled: true
+  coordinator:
+    replicas: 1
+    resources:
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+    persistence:
+      enabled: true
+      storageClass: "local-nvme" # Mandatory NVMe SSD requirement
+      size: "100Gi"
+
+  worker:
+    replicas: 3 # Start small, grow horizontal
+    resources:
+      limits:
+        cpu: "1"
+        memory: "4Gi"
+    persistence:
+      enabled: true
+      storageClass: "local-nvme"
+      size: "200Gi"
+
+# Read Replicas (Scaling up to 10+)
+readReplicas:
+  enabled: true
+  replicas: 10
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+
+# PgBouncer (Transaction mode for high concurrency)
+pgbouncer:
+  enabled: true
+  poolMode: "transaction"
+  maxClientConn: 5000
+  defaultPoolSize: 50
+
+# Geo-Sharding strategy (Citus specific)
+sharding:
+  factor: 32 # Higher sharding factor for crore writes
+  distributionKey: "user_id"

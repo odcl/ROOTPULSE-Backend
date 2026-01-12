@@ -1,0 +1,33 @@
+# Meilisearch Helm Values for k3s
+meilisearch:
+  enabled: true
+
+  # Resource limits for crore documents scale
+  resources:
+    limits:
+      cpu: "1"
+      memory: "4Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+
+  # Persistence on NVMe for <50ms latency
+  persistence:
+    enabled: true
+    storageClass: "local-nvme"
+    size: "100Gi"
+
+  # Security
+  environment:
+    MEILI_MASTER_KEY: "placeholder-production-key"
+    MEILI_NO_ANALYTICS: "true"
+
+# Sharding & Replication logic (Meilisearch Cloud or High-Availability setup)
+# For open-source, we typically use read-replicas behind a load balancer
+replicaCount: 3
+
+# Priority for low-latency searches
+service:
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
