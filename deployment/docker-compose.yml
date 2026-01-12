@@ -103,6 +103,15 @@ services:
     networks:
       - rootpulse_network
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - rootpulse_network
+
 networks:
   rootpulse_network:
     driver: bridge
@@ -111,3 +120,4 @@ volumes:
   postgres_data:
   keycloak_data:
   meilisearch_data:
+  ollama_data:

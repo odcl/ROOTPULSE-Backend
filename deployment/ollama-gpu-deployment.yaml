@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-gpu
+  namespace: rootpulse
+spec:
+  replicas: 1 # Start with 1, scale up via HPA/KEDA
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      nodeSelector:
+        accelerator: nvidia-gpu # Target dedicated GPU nodes
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          resources:
+            limits:
+              nvidia.com/gpu: 1 # Allocate 1 GPU per pod
+              cpu: "4"
+              memory: "8Gi"
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
+      volumes:
+        - name: ollama-storage
+          persistentVolumeClaim:
+            claimName: ollama-pvc-nvme
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-lb
+  namespace: rootpulse
+spec:
+  type: LoadBalancer
+  selector:
+    app: ollama
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+
+---
+# Horizontal Pod Autoscaler for GPU pods
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ollama-hpa
+  namespace: rootpulse
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ollama-gpu
+  minReplicas: 0 # Idle handling: Scale down to zero if no requests (Requires KEDA or specific HPA config)
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+  # Custom metric for GPU or Queue length is recommended for production (e.g. KEDA)
