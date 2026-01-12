@@ -1,15 +1,19 @@
 import uuid
-from django.db import models
+from datetime import datetime
+from sqlalchemy import Column, DateTime, Boolean
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import DeclarativeBase
 
-class BaseRootPulseModel(models.Model):
-    """
-    Base model with UUID and Audit fields for all RootPulse services.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
+class Base(DeclarativeBase):
+    pass
 
-    class Meta:
-        abstract = True
-        ordering = ['-created_at']
+class BaseRootPulseModel(Base):
+    """
+    Base model with UUID and Audit fields for all RootPulse services using SQLAlchemy.
+    """
+    __abstract__ = True
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = Column(Boolean, default=True)

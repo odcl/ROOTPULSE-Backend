@@ -5,10 +5,15 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
-        "django>=4.2",
-        "djangorestframework>=3.14",
+        "fastapi>=0.109.0",
+        "uvicorn[standard]>=0.27.0",
+        "pydantic>=2.5.3",
+        "pydantic-settings>=2.1.0",
+        "sqlalchemy>=2.0.25",
+        "asyncpg>=0.29.0",
         "pika>=1.3.1",  # RabbitMQ
-        "django-environ>=0.11.2",
+        "redis>=5.0.1",
+        "python-dotenv>=1.0.0",
     ],
-    description="Shared core library for RootPulse Microservices",
+    description="Shared core library for RootPulse Microservices (FastAPI Version)",
 )
