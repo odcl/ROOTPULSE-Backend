@@ -8,15 +8,24 @@ services:
       - name: iam-route
         paths:
           - /api/v1/iam
+        plugins:
+          - name: rate-limiting
+            config:
+              second: 5
+              minute: 100
+              policy: local
+          - name: request-size-limiting
+            config:
+              allowed_payload_size: 1 # 1MB limit for protection
+          - name: oidc
+            config:
+              issuer: "http://keycloak:8080/realms/rootpulse"
+              client_id: "kong"
+              client_secret: "placeholder-secret"
+              response_type: "code"
+              scope: ["openid", "profile", "email", "roles"]
+              auth_methods: ["authorization_code", "client_credentials"]
     plugins:
-      - name: rate-limiting
-        config:
-          second: 5
-          minute: 100
-          policy: local
-      - name: request-size-limiting
-        config:
-          allowed_payload_size: 1 # 1MB limit for protection
       - name: openid-connect
         config:
           issuer: "http://keycloak:8080/realms/rootpulse/.well-known/openid-configuration"
