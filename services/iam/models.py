@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Date, Integer, Float, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from rootpulse_core.models.base import BaseRootPulseModel
 import datetime
@@ -48,6 +49,12 @@ class VerificationStatus(str, enum.Enum):
     VERIFIED = "Verified"
     EXPIRED = "Expired"
 
+class SocialProvider(str, enum.Enum):
+    GOOGLE = "google"
+    FACEBOOK = "facebook"
+    APPLE = "apple"
+    GITHUB = "github"
+
 # --- Models ---
 
 class User(BaseRootPulseModel):
@@ -71,11 +78,12 @@ class User(BaseRootPulseModel):
     
     # Activity tracking
     last_login_at = Column(DateTime, nullable=True)
-    last_login_ip = Column(String(45), nullable=True) # Supports IPv6
+    last_login_ip = Column(String(45), nullable=True)
     
-    # Preferences
+    # Preferences & Extensibility
     preferred_language = Column(String(10), default='en')
     timezone = Column(String(50), default='UTC')
+    meta = Column(JSONB, default={}, nullable=False) # Flexible extra data
     
     # Referral System
     referral_code = Column(String(50), unique=True, nullable=True)
@@ -89,6 +97,8 @@ class User(BaseRootPulseModel):
     contacts = relationship("UserContact", back_populates="user", cascade="all, delete-orphan")
     devices = relationship("UserDevice", back_populates="user", cascade="all, delete-orphan")
     verifications = relationship("UserVerification", back_populates="user", cascade="all, delete-orphan")
+    social_links = relationship("UserSocialLink", back_populates="user", cascade="all, delete-orphan")
+    activity_logs = relationship("UserActivityLog", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.username or self.email}>"
@@ -108,6 +118,7 @@ class UserProfile(BaseRootPulseModel):
     occupation = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
     profile_photo_url = Column(String(500), nullable=True)
+    meta = Column(JSONB, default={}, nullable=False)
     
     user = relationship("User", back_populates="profile")
 
@@ -126,7 +137,7 @@ class UserAddress(BaseRootPulseModel):
     post_code = Column(String(20), nullable=True)
     city = Column(String(100), nullable=True)
     state = Column(String(100), nullable=True)
-    country_id = Column(String(5), nullable=False, default="BD") # ISO code
+    country_id = Column(String(5), nullable=False, default="BD")
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
     is_primary = Column(Boolean, default=False)
@@ -138,8 +149,8 @@ class UserContact(BaseRootPulseModel):
     
     user_id = Column(ForeignKey('users.id'), nullable=False)
     contact_type = Column(SQLEnum(ContactType), default=ContactType.PHONE)
-    contact_name = Column(String(255), nullable=True) # e.g. "Primary WhatsApp" or "Emergency Contact"
-    contact_relation = Column(String(100), nullable=True) # e.g. "Self", "Father", "Spouse"
+    contact_name = Column(String(255), nullable=True)
+    contact_relation = Column(String(100), nullable=True)
     contact_value = Column(String(255), nullable=False)
     is_primary = Column(Boolean, default=False)
     
@@ -155,6 +166,7 @@ class UserDevice(BaseRootPulseModel):
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
     last_login_at = Column(DateTime, default=datetime.datetime.utcnow)
+    is_active = Column(Boolean, default=True)
     
     user = relationship("User", back_populates="devices")
 
@@ -169,5 +181,27 @@ class UserVerification(BaseRootPulseModel):
     otp_expires_at = Column(DateTime, nullable=True)
     attempts = Column(Integer, default=0)
     verified_time = Column(DateTime, nullable=True)
+    metadata_json = Column(JSONB, default={}, nullable=False) # For KYC doc links, etc.
     
     user = relationship("User", back_populates="verifications")
+
+class UserSocialLink(BaseRootPulseModel):
+    __tablename__ = 'user_social_links'
+    
+    user_id = Column(ForeignKey('users.id'), nullable=False)
+    provider = Column(SQLEnum(SocialProvider), nullable=False)
+    provider_user_id = Column(String(255), nullable=False)
+    provider_data = Column(JSONB, default={}, nullable=False)
+    
+    user = relationship("User", back_populates="social_links")
+
+class UserActivityLog(BaseRootPulseModel):
+    __tablename__ = 'user_activity_logs'
+    
+    user_id = Column(ForeignKey('users.id'), nullable=False)
+    action = Column(String(100), nullable=False) # e.g. "password_change", "status_update"
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    payload = Column(JSONB, default={}, nullable=False) # Before/After values
+    
+    user = relationship("User", back_populates="activity_logs")
