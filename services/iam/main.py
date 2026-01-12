@@ -3,7 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 from dotenv import load_dotenv
+from typing import List
+
 from .database import get_db
+from .models import User
+from rootpulse_core.auth import get_current_user
+from rootpulse_core.permissions import get_user_permissions, get_user_menu, Role
 
 load_dotenv()
 
