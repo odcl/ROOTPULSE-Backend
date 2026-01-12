@@ -112,9 +112,9 @@ services:
     networks:
       - rootpulse_network
 
-  # --- Microservices ---
+  # --- Microservices (Internal Only) ---
 
-  iam_service:
+  iam-service:
     build:
       context: ..
       dockerfile: services/iam/Dockerfile
@@ -122,87 +122,73 @@ services:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
       REDIS_HOST: redis
       REDIS_PORT: 6379
-    ports:
-      - "8001:8000"
     depends_on:
       - db
       - redis
     networks:
       - rootpulse_network
 
-  catalog_service:
+  catalog-service:
     build:
       context: ..
       dockerfile: services/catalog/Dockerfile
     environment:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
-    ports:
-      - "8002:8000"
     depends_on:
       - db
     networks:
       - rootpulse_network
 
-  finance_service:
+  finance-service:
     build:
       context: ..
       dockerfile: services/finance/Dockerfile
     environment:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
-    ports:
-      - "8003:8000"
     depends_on:
       - db
     networks:
       - rootpulse_network
 
-  membership_service:
+  membership-service:
     build:
       context: ..
       dockerfile: services/membership/Dockerfile
     environment:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
-    ports:
-      - "8004:8000"
     depends_on:
       - db
     networks:
       - rootpulse_network
 
-  chat_service:
+  chat-service:
     build:
       context: ..
       dockerfile: services/chat/Dockerfile
     environment:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
-    ports:
-      - "8005:8000"
     depends_on:
       - db
     networks:
       - rootpulse_network
 
-  workflow_service:
+  workflow-service:
     build:
       context: ..
       dockerfile: services/workflow/Dockerfile
     environment:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
-    ports:
-      - "8006:8000"
     depends_on:
       - db
     networks:
       - rootpulse_network
 
-  notifications_service:
+  notifications-service:
     build:
       context: ..
       dockerfile: services/notifications/Dockerfile
     environment:
       DATABASE_URL: "postgresql+asyncpg://rootpulse_user:rootpulse_password@db:5432/ROOTPULSE"
-    ports:
-      - "8007:8000"
     depends_on:
       - db
     networks:

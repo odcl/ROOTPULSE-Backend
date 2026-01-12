@@ -2,38 +2,77 @@ _format_version: "3.0"
 _transform: true
 
 services:
+  # --- IAM Service ---
   - name: iam-service
     url: http://iam-service:8000
     routes:
       - name: iam-route
         paths:
-          - /api/v1/iam
-        plugins:
-          - name: rate-limiting
-            config:
-              second: 5
-              minute: 100
-              policy: local
-          - name: request-size-limiting
-            config:
-              allowed_payload_size: 1 # 1MB limit for protection
-          - name: oidc
-            config:
-              issuer: "http://keycloak:8080/realms/rootpulse"
-              client_id: "kong"
-              client_secret: "placeholder-secret"
-              response_type: "code"
-              scope: ["openid", "profile", "email", "roles"]
-              auth_methods: ["authorization_code", "client_credentials"]
+          - /iam
+        strip_path: true
     plugins:
-      - name: openid-connect
+      - name: rate-limiting
         config:
-          issuer: "http://keycloak:8080/realms/rootpulse/.well-known/openid-configuration"
-          client_id: ["rootpulse-api"]
-          client_secret: ["placeholder-secret"]
-          auth_methods: ["bearer"]
+          second: 10
+          minute: 500
+          policy: local
 
-  - name: health-check
+  # --- Catalog Service ---
+  - name: catalog-service
+    url: http://catalog-service:8000
+    routes:
+      - name: catalog-route
+        paths:
+          - /catalog
+        strip_path: true
+
+  # --- Finance Service ---
+  - name: finance-service
+    url: http://finance-service:8000
+    routes:
+      - name: finance-route
+        paths:
+          - /finance
+        strip_path: true
+
+  # --- Membership Service ---
+  - name: membership-service
+    url: http://membership-service:8000
+    routes:
+      - name: membership-route
+        paths:
+          - /membership
+        strip_path: true
+
+  # --- Chat Service ---
+  - name: chat-service
+    url: http://chat-service:8000
+    routes:
+      - name: chat-route
+        paths:
+          - /chat
+        strip_path: true
+
+  # --- Workflow Service ---
+  - name: workflow-service
+    url: http://workflow-service:8000
+    routes:
+      - name: workflow-route
+        paths:
+          - /workflow
+        strip_path: true
+
+  # --- Notifications Service ---
+  - name: notifications-service
+    url: http://notifications-service:8000
+    routes:
+      - name: notifications-route
+        paths:
+          - /notifications
+        strip_path: true
+
+  # --- Global Health ---
+  - name: global-health
     url: http://iam-service:8000/health
     routes:
       - name: health-route
@@ -45,3 +84,20 @@ plugins:
   - name: file-log
     config:
       path: /dev/stdout
+  - name: cors
+    config:
+      origins: ["*"]
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+      headers:
+        [
+          "Accept",
+          "Accept-Version",
+          "Content-Length",
+          "Content-MD5",
+          "Content-Type",
+          "Date",
+          "Authorization",
+        ]
+      exposed_headers: ["X-Auth-Token"]
+      credentials: true
+      max_age: 3600
