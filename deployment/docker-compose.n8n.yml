@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  n8n_db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=n8n_user
+      - POSTGRES_PASSWORD=n8n_password
+      - POSTGRES_DB=n8n
+    volumes:
+      - n8n_db_data:/var/lib/postgresql/data
+    networks:
+      - rootpulse_network
+
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_HOST=n8n_db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=n8n_user
+      - DB_POSTGRESDB_PASSWORD=n8n_password
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=rootpulse_n8n
+      - NODE_ENV=production
+    depends_on:
+      - n8n_db
+    networks:
+      - rootpulse_network
+
+networks:
+  rootpulse_network:
+    external: true
+
+volumes:
+  n8n_db_data:

@@ -1,0 +1,38 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: iam-service
+    url: http://iam-service:8000
+    routes:
+      - name: iam-route
+        paths:
+          - /api/v1/iam
+    plugins:
+      - name: rate-limiting
+        config:
+          second: 5
+          minute: 100
+          policy: local
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 1 # 1MB limit for protection
+      - name: openid-connect
+        config:
+          issuer: "http://keycloak:8080/realms/rootpulse/.well-known/openid-configuration"
+          client_id: ["rootpulse-api"]
+          client_secret: ["placeholder-secret"]
+          auth_methods: ["bearer"]
+
+  - name: health-check
+    url: http://iam-service:8000/health
+    routes:
+      - name: health-route
+        paths:
+          - /health
+
+plugins:
+  - name: prometheus
+  - name: file-log
+    config:
+      path: /dev/stdout

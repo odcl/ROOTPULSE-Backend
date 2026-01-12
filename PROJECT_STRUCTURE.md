@@ -4,6 +4,29 @@ This document provides a detailed breakdown of the `ROOTPULSE-Backend` project s
 
 ## 1. Project Root Directories
 
+### Current Directory Structure
+
+```text
+ROOTPULSE-Backend/
+├── ci/                 # Continuous Integration scripts
+├── deployment/         # Deployment configurations (Docker, K8s)
+├── gateway/            # API Gateway logic
+├── packages/           # Shared libraries
+│   └── rootpulse-core/ # Core shared utilities and models
+├── scripts/            # Project utility scripts
+├── services/           # Microservices (Domain logic)
+│   ├── catalog/        # Product inventory service
+│   ├── chat/           # Chat & Messaging service
+│   ├── finance/        # Financial transactions & wallets
+│   ├── iam/            # Identity & Access Management (User/Auth)
+│   ├── membership/     # Subscription & Tier management
+│   ├── notifications/  # Notification dispatch service
+│   └── workflow/       # Business process automation
+├── venv/               # Python virtual environment
+├── PROJECT_STRUCTURE.md # This documentation
+└── ... (other root files)
+```
+
 ### `services/`
 
 The heart of the backend architecture. This project follows a **Microservices Architecture**, where each folder inside `services` represents a standalone, independently deployable service responsible for a specific domain of the application.
@@ -32,7 +55,75 @@ Utility scripts for development, database management, or maintenance tasks.
 
 ---
 
-## 2. Core Packages (`packages/`)
+## 2. High-Level Architecture Diagram
+
+Here is a visual representation of the **RootPulse** 4-Tier Layered Architecture:
+
+![RootPulse Architecture Diagram](assets/architecture_simple.png)
+
+> [!NOTE] > **Pro Dynamic View**: For a technical 3D isometric representation, see [Architecture Pro (3D)](assets/architecture_pro.png).
+
+```mermaid
+graph TD
+    %% Layer 1: Access
+    subgraph L1 ["Tier 1: Client/Access Layer"]
+        Web[Web Dashboard]
+        Mob[Mobile App]
+        POS[Point of Sale]
+        IoT[IoT/Telemetry]
+    end
+
+    %% Layer 2: Security & Traffic
+    subgraph L2 ["Tier 2: Infrastructure & Security"]
+        Gateway[Kong API Gateway]
+        Auth[Keycloak Identity Server]
+    end
+
+    %% Layer 3: Logic
+    subgraph L3 ["Tier 3: Logic & Services Layer"]
+        subgraph "Commercial Domain"
+            Catalog[Catalog Service]
+            Membership[Membership Service]
+        end
+        subgraph "Operational Domain"
+            Workflow[Workflow & Automations]
+            Chat[Real-time Communication]
+        end
+        subgraph "Financial Domain"
+            Finance[Finance & Ledger]
+        end
+        subgraph "Intelligence Layer"
+            AI[AI & Analytics Service]
+        end
+    end
+
+    %% Layer 4: Data/Core
+    subgraph L4 ["Tier 4: Core & Data Layer"]
+        Bus((Event Bus - RabbitMQ))
+        Cache[(Redis Cache)]
+        DB[(Multi-tenant Postgres DB)]
+    end
+
+    %% Connections
+    L1 -->|HTTPS/WS| Gateway
+    Gateway <-->|OIDC/JWT| Auth
+    Gateway -->|Internal RPC/REST| L3
+    L3 <-->|Event-Driven| Bus
+    L3 --- Cache
+    L3 --- DB
+
+    classDef access fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef infra fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef logic fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    classDef core fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+
+    class Web,Mob,POS,IoT access;
+    class Gateway,Auth infra;
+    class Catalog,Membership,Workflow,Chat,Finance,AI logic;
+    class Bus,Cache,DB core;
+```
+
+## 3. Core Packages (`packages/`)
 
 ### `rootpulse-core`
 
@@ -87,7 +178,40 @@ Utility scripts for development, database management, or maintenance tasks.
 
 ---
 
-## 4. Other Key Files
+## 4. Design Patterns & Core Implementation
+
+To ensure a "Best-in-Class" architecture, **RootPulse** follows industry-standard distributed system patterns.
+
+### Event-Driven Architecture (EDA)
+
+Instead of services calling each other directly (which creates a mess), we use an **Asynchronous Event-Driven** approach.
+
+- **The Pattern**: Every major state change (e.g., `OrderCreated`, `PaymentSuccess`) is published to **RabbitMQ** as a "Topic".
+- **The Benefit**: Services are "Decoupled". If the Chat service goes down, the Finance service can still process payments. The Chat service will catch up on messages once it’s back online.
+
+### SAGA Pattern for Distributed Transactions
+
+Since each service has its own database, we use the SAGA pattern to ensure **Data Consistency** across the system.
+
+- **Flow**: Service A completes a task -> Publishes an event -> Service B listens and updates its DB.
+- **Resilience**: The `rootpulse-core` package includes resilience logic to handle retries and failures automatically.
+
+### Security Architecture (Zero-Trust)
+
+1.  **Authentication**: Handled by **Keycloak** (OIDC Standard).
+2.  **Authorization**: The **Kong API Gateway** verifies the JWT (JSON Web Token) before any request reaches the internal services.
+3.  **Tenant Isolation**: Databases are structured to support multi-tenancy, ensuring one customer's data never leaks to another.
+
+### Observability & Monitoring
+
+The system is built to be "Transparent":
+
+- **Tracing**: Every request is assigned a `trace_id` by the gateway, which follows the request through every microservice.
+- **Resilience**: Implementation of **Circuit Breakers** in the core package prevents a single failing service from taking down the entire system.
+
+---
+
+## 5. Other Key Files
 
 - **`RootPuls - for developer.docx` / `RootPuls.xlsx`**: Project requirements and planning documents.
 - **`RootPulse_workstep_dashboard.pdf`**: Visual documentation of workflows or UI mockups.

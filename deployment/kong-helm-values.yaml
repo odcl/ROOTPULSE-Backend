@@ -1,0 +1,39 @@
+deployment:
+  kong:
+    enabled: true
+    # DB-less mode
+    env:
+      database: "off"
+
+    # Declarative configuration via configMap
+    declarativeConfig: "kong-declarative-config"
+
+autoScaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Custom Plugins or Configuration
+ingressController:
+  enabled: false # Use Kong as a global gateway, not just ingress
+
+# Networking for Geo-Load Balancing (crore traffic ready)
+service:
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb" # Example for high throughput

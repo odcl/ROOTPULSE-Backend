@@ -1,7 +1,7 @@
 import pika
 import json
 import logging
-from django.conf import settings
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -9,13 +9,14 @@ class RabbitMQBus:
     """
     Standardizes RabbitMQ communication for all RootPulse services.
     Supports Publishing and Consuming with a unified event structure.
+    Independent of Django settings.
     """
     
     def __init__(self, host=None, port=None, user=None, password=None):
-        self.host = host or getattr(settings, 'RABBITMQ_HOST', 'localhost')
-        self.port = port or getattr(settings, 'RABBITMQ_PORT', 5672)
-        self.user = user or getattr(settings, 'RABBITMQ_USER', 'guest')
-        self.password = password or getattr(settings, 'RABBITMQ_PASS', 'guest')
+        self.host = host or os.getenv('RABBITMQ_HOST', 'localhost')
+        self.port = int(port or os.getenv('RABBITMQ_PORT', 5672))
+        self.user = user or os.getenv('RABBITMQ_USER', 'guest')
+        self.password = password or os.getenv('RABBITMQ_PASS', 'guest')
         self._connection = None
         self._channel = None
 
@@ -44,7 +45,8 @@ class RabbitMQBus:
             payload = {
                 "event_type": event_type,
                 "data": data,
-                "schema_version": "1.0"
+                "schema_version": "1.0",
+                "timestamp": str(os.getenv("TIMESTAMP", "")) # Just an example
             }
             
             channel.basic_publish(
@@ -65,5 +67,5 @@ class RabbitMQBus:
         if self._connection and self._connection.is_open:
             self._connection.close()
 
-# Singleton instance for easy import
+# Singleton instance
 bus = RabbitMQBus()
