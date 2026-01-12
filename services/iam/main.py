@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from scalar_fastapi_py import get_scalar_api_reference
 import os
+import random
+import string
+from datetime import datetime
 from dotenv import load_dotenv
 from typing import List
 from passlib.context import CryptContext
@@ -13,6 +16,7 @@ from .models import User, UserProfile
 from .schemas import UserCreate, UserResponse, PermissionResponse
 from rootpulse_core.auth import get_current_user
 from rootpulse_core.permissions import get_user_permissions, get_user_menu, Role
+from rootpulse_core.cache import get_redis_client
 
 load_dotenv()
 
@@ -65,16 +69,25 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     """
     Onboard a new user into the RootPulse system.
-    Automatically creates a sanitized profile and hashes the password.
+    Strictly checks for unique Email and Phone.
+    Generates a Redis-backed OTP for email verification.
     """
-    # 1. Check if user already exists
-    query = select(User).where((User.email == user_in.email) | (User.username == user_in.username))
+    # 1. Check if user already exists (Aggressive Uniqueness Check)
+    query = select(User).where(
+        (User.email == user_in.email) | 
+        (User.username == user_in.username) |
+        (User.phone == user_in.phone)
+    )
     result = await db.execute(query)
-    if result.scalars().first():
-        raise HTTPException(
-            status_code=400,
-            detail="A user with this email or username already exists."
-        )
+    existing_user = result.scalars().first()
+    if existing_user:
+        if existing_user.email == user_in.email:
+            detail = "Email already registered."
+        elif existing_user.phone == user_in.phone:
+            detail = "Phone number already registered."
+        else:
+            detail = "Username already taken."
+        raise HTTPException(status_code=400, detail=detail)
     
     # 2. Hash password
     hashed_password = pwd_context.hash(user_in.password)
@@ -97,10 +110,52 @@ async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db))
     )
     db.add(new_profile)
     
+    # 5. Generate & Store OTP in Redis (Verification Flow)
+    otp = ''.join(random.choices(string.digits, k=6))
+    redis = await get_redis_client()
+    # Key: verify_email:{email} | Value: {otp}:{user_id} | Expiry: 10 mins
+    await redis.setex(f"verify_email:{user_in.email}", 600, f"{otp}:{new_user.id}")
+    
     await db.commit()
     await db.refresh(new_user)
     
+    # [DEVELOPMENT LOG] In production, send email here
+    print(f"DEBUG: Email Verification OTP for {user_in.email} is {otp}")
+    
     return new_user
+
+@app.post("/auth/verify-email", tags=["Auth"])
+async def verify_email(email: str, otp: str, db: AsyncSession = Depends(get_db)):
+    """
+    Verify a user's email using the OTP sent during registration.
+    """
+    redis = await get_redis_client()
+    redis_data = await redis.get(f"verify_email:{email}")
+    
+    if not redis_data:
+        raise HTTPException(status_code=400, detail="OTP expired or email invalid.")
+    
+    # Check if redis_data is bytes (standard for some clients) and decode
+    if isinstance(redis_data, bytes):
+        redis_data = redis_data.decode('utf-8')
+        
+    stored_otp, user_id = redis_data.split(":")
+    
+    if otp != stored_otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP.")
+    
+    # Update User status
+    query = select(User).where(User.id == user_id)
+    result = await db.execute(query)
+    user = result.scalars().first()
+    
+    if user:
+        user.email_verified_at = datetime.utcnow()
+        await db.commit()
+        await redis.delete(f"verify_email:{email}")
+        return {"status": "success", "message": "Email verified successfully."}
+    
+    raise HTTPException(status_code=404, detail="User not found.")
 
 @app.get("/me/permissions", response_model=PermissionResponse, tags=["Auth"])
 async def get_my_permissions(current_user: dict = Depends(get_current_user)):
