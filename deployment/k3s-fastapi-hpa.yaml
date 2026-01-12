@@ -14,6 +14,18 @@ spec:
       labels:
         app: iam-service
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - iam-service
+                topologyKey: "kubernetes.io/hostname"
       containers:
         - name: iam-service
           image: rootpulse/iam-service:latest # Placeholder
