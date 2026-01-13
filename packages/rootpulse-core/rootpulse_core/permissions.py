@@ -4,6 +4,7 @@ from typing import List, Dict, Set
 # --- 1. Role Definitions ---
 class Role(str, Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
+    CUSTOM_ADMIN = "CUSTOM_ADMIN"
     FINANCE_ADMIN = "FINANCE_ADMIN"
     CONTENT_MANAGER = "CONTENT_MANAGER"
     SUPPORT_AGENT = "SUPPORT_AGENT"
@@ -27,15 +28,31 @@ class Permission(str, Enum):
     # Content
     MANAGE_CONTENT = "content:manage"
 
+    # Workflow
+    VIEW_WORKFLOWS = "workflow:view"
+    MANAGE_WORKFLOWS = "workflow:manage"
+    EXECUTE_WORKFLOWS = "workflow:execute"
+
+    # Catalog
+    VIEW_CATALOG = "catalog:view"
+    MANAGE_CATALOG = "catalog:manage"
+
+    # Chat
+    VIEW_CHAT = "chat:view"
+    MODERATE_CHAT = "chat:moderate"
+
+    # Analytics
+    VIEW_ANALYTICS = "analytics:view"
+    EXPORT_ANALYTICS = "analytics:export"
+
+    # Notifications
+    SEND_NOTIFICATIONS = "notifications:send"
+    MANAGE_NOTIFICATIONS = "notifications:manage"
+
 # --- 3. Role -> Permission Mapping (Composite Logic) ---
 ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
-    Role.SUPER_ADMIN: {
-        # Super Admin has ALL permissions
-        Permission.VIEW_DASHBOARD, Permission.MANAGE_SETTINGS,
-        Permission.VIEW_USERS, Permission.EDIT_USERS, Permission.DELETE_USERS,
-        Permission.VIEW_TRANSACTIONS, Permission.MANAGE_PAYOUTS,
-        Permission.MANAGE_CONTENT
-    },
+    Role.SUPER_ADMIN: set(Permission), # Legacy Super Admin has everything
+    Role.CUSTOM_ADMIN: set(Permission), # Custom Super Admin has everything
     Role.FINANCE_ADMIN: {
         Permission.VIEW_DASHBOARD,
         Permission.VIEW_TRANSACTIONS, Permission.MANAGE_PAYOUTS
@@ -52,12 +69,15 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
 }
 
 # --- 4. Frontend Menu Mapping ---
-# Which menus should be visible based on permissions?
 MENU_CONFIG = [
     {"id": "dashboard", "label": "Dashboard", "permission": Permission.VIEW_DASHBOARD},
     {"id": "users", "label": "User Management", "permission": Permission.VIEW_USERS},
+    {"id": "workflow", "label": "Workflows", "permission": Permission.VIEW_WORKFLOWS},
+    {"id": "catalog", "label": "Catalog", "permission": Permission.VIEW_CATALOG},
     {"id": "finance", "label": "Finance", "permission": Permission.VIEW_TRANSACTIONS},
-    {"id": "content", "label": "Content", "permission": Permission.MANAGE_CONTENT},
+    {"id": "chat", "label": "Community Chat", "permission": Permission.VIEW_CHAT},
+    {"id": "notifications", "label": "Notifications", "permission": Permission.SEND_NOTIFICATIONS},
+    {"id": "analytics", "label": "Analytics", "permission": Permission.VIEW_ANALYTICS},
     {"id": "settings", "label": "Settings", "permission": Permission.MANAGE_SETTINGS},
 ]
 

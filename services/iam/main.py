@@ -2,10 +2,11 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from scalar_fastapi_py import get_scalar_api_reference
+# from scalar_fastapi_py import get_scalar_api_reference
 import os
 import random
 import string
+import secrets
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import List
@@ -16,7 +17,8 @@ from .models import User, UserProfile
 from .schemas import UserCreate, UserResponse, PermissionResponse
 from rootpulse_core.auth import get_current_user
 from rootpulse_core.permissions import get_user_permissions, get_user_menu, Role
-from rootpulse_core.cache import get_redis_client
+from rootpulse_core.cache import cache
+from rootpulse_core.email import send_verification_email
 
 load_dotenv()
 
@@ -35,16 +37,17 @@ app = FastAPI(
     """,
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    root_path=os.getenv("ROOT_PATH", "")
 )
 
 # Scalar Premium Documentation UI
-@app.get("/scalar", include_in_schema=False)
-async def scalar_html():
-    return get_scalar_api_reference(
-        openapi_url=app.openapi_url,
-        title=app.title,
-    )
+# @app.get("/scalar", include_in_schema=False)
+# async def scalar_html():
+#     return get_scalar_api_reference(
+#         openapi_url=app.openapi_url,
+#         title=app.title,
+#     )
 
 # CORS configuration
 app.add_middleware(
@@ -55,17 +58,80 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Lifecycle Events ---
+
+@app.on_event("startup")
+async def on_startup():
+    from .database import init_db
+    print("Initializing database tables...")
+    await init_db()
+    print("Database tables initialized.")
+
+# --- Exception Handlers ---
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "message": exc.detail,
+            "code": "HTTP_ERROR"
+        },
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    # Ensure all error elements are JSON serializable
+    error_details = []
+    for error in exc.errors():
+        # Remove non-serializable objects from error dict
+        safe_error = {k: v for k, v in error.items() if k not in ['ctx']}
+        if 'ctx' in error:
+             safe_error['ctx'] = {k: str(v) for k, v in error['ctx'].items()}
+        error_details.append(safe_error)
+        
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "message": "Validation Error",
+            "code": "VALIDATION_ERROR",
+            "errors": error_details
+        },
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    # Log the error here in production
+    print(f"CRITICAL ERROR: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "Internal Server Error",
+            "code": "INTERNAL_SERVER_ERROR"
+        },
+    )
+
 # --- Endpoints ---
 
 @app.get("/health", tags=["System"])
 async def health_check(db: AsyncSession = Depends(get_db)):
     return {
-        "status": "healthy",
-        "service": "iam-service",
-        "database": "connected"
+        "status": "success",
+        "message": "System is healthy",
+        "data": {
+            "status": "healthy",
+            "service": "iam-service",
+            "database": "connected"
+        }
     }
 
-@app.post("/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, tags=["Auth"])
+@app.post("/auth/register", status_code=status.HTTP_201_CREATED, tags=["Auth"])
 async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     """
     Onboard a new user into the RootPulse system.
@@ -89,15 +155,26 @@ async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db))
             detail = "Username already taken."
         raise HTTPException(status_code=400, detail=detail)
     
+    # 1.a. Check if password is provided (Guest Mode check)
+    raw_password = user_in.password
+    is_guest = False
+    
+    if not raw_password:
+        is_guest = True
+        # Generate a secure random password for guest
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        raw_password = ''.join(secrets.choice(alphabet) for i in range(12))
+    
     # 2. Hash password
-    hashed_password = pwd_context.hash(user_in.password)
+    hashed_password = pwd_context.hash(raw_password)
     
     # 3. Create User object
     new_user = User(
         username=user_in.username,
         email=user_in.email,
         phone=user_in.phone,
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        # is_active is True by default in model, so user can login immediately
     )
     
     db.add(new_user)
@@ -112,24 +189,49 @@ async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db))
     
     # 5. Generate & Store OTP in Redis (Verification Flow)
     otp = ''.join(random.choices(string.digits, k=6))
-    redis = await get_redis_client()
+    redis = await cache.get_client()
     # Key: verify_email:{email} | Value: {otp}:{user_id} | Expiry: 10 mins
     await redis.setex(f"verify_email:{user_in.email}", 600, f"{otp}:{new_user.id}")
     
     await db.commit()
     await db.refresh(new_user)
     
-    # [DEVELOPMENT LOG] In production, send email here
-    print(f"DEBUG: Email Verification OTP for {user_in.email} is {otp}")
+    # 6. Send Verification Email (Real SMTP)
+    try:
+        await send_verification_email(
+            email=user_in.email,
+            otp=otp,
+            guest_password=raw_password if is_guest else None
+        )
+        print(f"DEBUG: Email sent successfully to {user_in.email}")
+    except Exception as e:
+        print(f"ERROR: Failed to send email to {user_in.email}: {str(e)}")
+        # In a real system, we might want to handle this more gracefully, 
+        # but for now we'll just log it to avoid blocking the registration response.
     
-    return new_user
+    # Wrap in standard response structure?
+    # NOTE: Since the response_model is UserResponse (a Pydantic model), returning a dict with "status", etc. might fail validation 
+    # if we don't update response_model. 
+    # HOWEVER, strict Pydantic models usually expect specific fields. 
+    # To properly implement this wrapper, I should probably return a dict and remove response_model OR update response_model.
+    # Given the constraint to "standardize all responses", I will modify the response_model in the decorator in a follow-up or try to do it here.
+    # Actually, let's keep it simple for now and rely on the frontend parsing `data` if I change the model.
+    # But wait, `response_model=UserResponse` will filter the output to ONLY matching fields. 
+    # If I return {"status":..., "data": user}, Pydantic will complain if UserResponse doesn't have "status".
+    # I will REMOVE response_model from the decorator to allow returning the Dict wrapper freely, OR use the new StandardResponse.
+    
+    return {
+        "status": "success", 
+        "message": "User registered successfully.",
+        "data": new_user
+    }
 
 @app.post("/auth/verify-email", tags=["Auth"])
 async def verify_email(email: str, otp: str, db: AsyncSession = Depends(get_db)):
     """
     Verify a user's email using the OTP sent during registration.
     """
-    redis = await get_redis_client()
+    redis = await cache.get_client()
     redis_data = await redis.get(f"verify_email:{email}")
     
     if not redis_data:
@@ -153,7 +255,11 @@ async def verify_email(email: str, otp: str, db: AsyncSession = Depends(get_db))
         user.email_verified_at = datetime.utcnow()
         await db.commit()
         await redis.delete(f"verify_email:{email}")
-        return {"status": "success", "message": "Email verified successfully."}
+        return {
+            "status": "success", 
+            "message": "Email verified successfully.",
+            "data": None
+        }
     
     raise HTTPException(status_code=404, detail="User not found.")
 

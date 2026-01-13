@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Date, Integer, Float, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from rootpulse_core.models.base import BaseRootPulseModel
+from rootpulse_core.models.base import BaseRootPulseModel, Base
 import datetime
 import enum
 

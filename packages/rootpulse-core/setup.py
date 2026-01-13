@@ -20,4 +20,8 @@ setup(
         "python-dotenv>=1.0.0",
     ],
     description="Shared core library for RootPulse Microservices (FastAPI Version)",
+    include_package_data=True,
+    package_data={
+        "rootpulse_core": ["templates/*.html"],
+    },
 )

@@ -1,34 +1,23 @@
 # Build stage
-FROM python:3.11-slim as builder
+FROM rootpulse-base AS builder
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy root requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-
-# Copy core package and install it
-COPY packages/rootpulse-core /app/packages/rootpulse-core
-RUN pip install --no-cache-dir --prefix=/install /app/packages/rootpulse-core
+# (Dependencies already in base)
 
 # Runtime stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies (minimal)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
-COPY --from=builder /install /usr/local
+# Copy installed packages from builder (which are in /usr/local in base)
+COPY --from=builder /usr/local /usr/local
+
 
 # Copy application code
 COPY services/iam /app/services/iam

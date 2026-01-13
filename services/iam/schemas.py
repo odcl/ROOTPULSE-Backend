@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=150, example="john_doe")
     email: EmailStr = Field(..., example="john@example.com")
     phone: Optional[str] = Field(None, example="+8801700000000")
-    password: str = Field(..., min_length=8, example="StrongPassword123!")
+    password: Optional[str] = Field(None, min_length=8, example="StrongPassword123!")
     
     @validator('username')
     def username_alphanumeric(cls, v):
@@ -62,6 +62,17 @@ class MenuItem(BaseModel):
     id: str
     label: str
     permission: str
+
+# --- 5. Standard Response Schema ---
+
+from typing import Generic, TypeVar, Any
+T = TypeVar('T')
+
+class StandardResponse(BaseModel, Generic[T]):
+    status: str
+    message: str
+    data: Optional[T] = None
+    errors: Optional[Any] = None
 
 class PermissionResponse(BaseModel):
     roles: List[str]

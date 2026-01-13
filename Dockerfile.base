@@ -1,0 +1,22 @@
+# Base Image for all RootPulse Services
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install common build and runtime dependencies once
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install some heavy shared requirements if possible
+COPY requirements.txt .
+# We don't install all here yet to keep it generic, but we could if they share most.
+# Given they are microservices, they likely share 90% of requirements.txt.
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the core package since everyone uses it
+COPY packages/rootpulse-core /app/packages/rootpulse-core
+RUN pip install --no-cache-dir /app/packages/rootpulse-core

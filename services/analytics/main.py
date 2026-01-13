@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from scalar_fastapi_py import get_scalar_api_reference
+# from scalar_fastapi_py import get_scalar_api_reference
 import os
 from dotenv import load_dotenv
 
@@ -19,16 +19,17 @@ app = FastAPI(
     """,
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    root_path=os.getenv("ROOT_PATH", "")
 )
 
 # Scalar Documentation
-@app.get("/scalar", include_in_schema=False)
-async def scalar_html():
-    return get_scalar_api_reference(
-        openapi_url=app.openapi_url,
-        title=app.title,
-    )
+# @app.get("/scalar", include_in_schema=False)
+# async def scalar_html():
+#     return get_scalar_api_reference(
+#         openapi_url=app.openapi_url,
+#         title=app.title,
+#     )
 
 app.add_middleware(
     CORSMiddleware,

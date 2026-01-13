@@ -1,5 +1,9 @@
+import os
 from fastapi import FastAPI
-app = FastAPI(title="RootPulse Chat Service")
+app = FastAPI(
+    title="RootPulse Chat Service",
+    root_path=os.getenv("ROOT_PATH", "")
+)
 
 @app.get("/health")
 async def health_check():
