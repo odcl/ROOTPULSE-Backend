@@ -1,0 +1,46 @@
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: rootpulse-federation-policy
+  namespace: rootpulse
+spec:
+  resourceSelectors:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: iam-service
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: meilisearch
+  placement:
+    clusterAffinity:
+      clusterNames:
+        - cluster-asia-1
+        - cluster-us-east-1
+    replicaScheduling:
+      replicaDivisionStrategy: Weighted
+      replicaSchedulingType: Divided
+      weightPreference:
+        staticWeightList:
+          - targetCluster:
+              clusterNames: ["cluster-asia-1"]
+            weight: 70
+          - targetCluster:
+              clusterNames: ["cluster-us-east-1"]
+            weight: 30
+
+---
+# Override Policy for Geo-latency optimization
+apiVersion: policy.karmada.io/v1alpha1
+kind: OverridePolicy
+metadata:
+  name: geo-limit-override
+  namespace: rootpulse
+spec:
+  resourceSelectors:
+    - apiVersion: apps/v1
+      kind: Deployment
+  overriders:
+    plaintext:
+      - path: "/spec/template/spec/containers/0/env/-"
+        operator: add
+        value: '{"name": "CLUSTER_REGION", "value": "geo-optimized"}'

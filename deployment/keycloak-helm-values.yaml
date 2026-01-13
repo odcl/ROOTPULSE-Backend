@@ -1,0 +1,44 @@
+# Keycloak Helm Values for k3s
+keycloak:
+  replicas: 3 # High Availability
+
+  # Resource limits for active auth sessions
+  resources:
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+
+  # Database Integration (Citus/Postgres)
+  db:
+    vendor: postgres
+    host: db
+    name: keycloak
+    user: keycloak_user
+    password: keycloak_password
+
+  # Infinispan / Redis Caching for sessions
+  extraEnv:
+    - name: KC_CACHE
+      value: ispn
+    - name: KC_CACHE_STACK
+      value: kubernetes
+    - name: KC_SESSION_CACHE_REPLICAS
+      value: "2"
+
+  # Security Hardening
+  proxy: edge
+  hostname: auth.rootpulse.com
+  http-enabled: false
+
+  # MFA & User Security
+  # Enabled by default in Keycloak admin: TOTP, WebAuthn, OTP
+
+# Horizontal Pod Autoscaler for Auth spikes
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 80

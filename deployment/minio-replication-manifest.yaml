@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: rootpulse
+spec:
+  replicas: 4 # Distributed mode
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:latest
+          command:
+            - sh
+            - -c
+            - minio server --address ":9000" --console-address ":9001" /data{1...4}
+          env:
+            - name: MINIO_ROOT_USER
+              value: "minioadmin"
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioadmin"
+          ports:
+            - containerPort: 9000
+            - containerPort: 9001
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-pvc-nvme
+
+---
+# Multi-site Replication Placeholder
+# minio client (mc) command to link sites:
+# mc admin replicate add site1 site2
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-setup-replication
+  namespace: rootpulse
+spec:
+  template:
+    spec:
+      containers:
+        - name: mc
+          image: minio/mc:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mc alias set site1 http://minio:9000 minioadmin minioadmin;
+              mc mb site1/rootpulse;
+      restartPolicy: OnFailure

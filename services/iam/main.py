@@ -1,16 +1,27 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 import os
 from dotenv import load_dotenv
-from .database import get_db
+
+from .api.v1.api import api_router
 
 load_dotenv()
 
 app = FastAPI(
     title="RootPulse IAM Service",
-    description="Identity and Access Management Service for RootPulse",
+    description="""
+    ## Identity and Access Management (IAM)
+    World-class security and identity service for the RootPulse ecosystem.
+    
+    * **Auth**: Registration & Verification
+    * **RBAC**: Multi-role permission system
+    """,
     version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    root_path=os.getenv("ROOT_PATH", "")
 )
 
 # CORS configuration
@@ -22,26 +33,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
-async def health_check(db: AsyncSession = Depends(get_db)):
-    # Simple check to verify DB connection
-    try:
-        # await db.execute("SELECT 1") # Optional validation
-        return {
-            "status": "healthy",
-            "service": "iam-service",
-            "database": "connected",
-            "environment": os.getenv("ENVIRONMENT", "development")
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "reason": str(e)
-        }
+# --- Lifecycle Events ---
+@app.on_event("startup")
+async def on_startup():
+    from .database import init_db
+    print("Initializing database tables...")
+    await init_db()
+    print("Database tables initialized.")
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to RootPulse IAM Service API"}
+# --- Exception Handlers ---
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "message": exc.detail,
+            "code": "HTTP_ERROR"
+        },
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    error_details = []
+    for error in exc.errors():
+        safe_error = {k: v for k, v in error.items() if k not in ['ctx']}
+        if 'ctx' in error:
+             safe_error['ctx'] = {k: str(v) for k, v in error['ctx'].items()}
+        error_details.append(safe_error)
+        
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "message": "Validation Error",
+            "code": "VALIDATION_ERROR",
+            "errors": error_details
+        },
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    print(f"CRITICAL ERROR: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "Internal Server Error",
+            "code": "INTERNAL_SERVER_ERROR"
+        },
+    )
+
+# --- Include Modular Router ---
+app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn

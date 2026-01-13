@@ -14,7 +14,14 @@ setup(
         "pika>=1.3.1",  # RabbitMQ
         "redis>=5.0.1",
         "meilisearch>=0.28.1",
+        "boto3>=1.34.34",
+        "python-jose[cryptography]>=3.3.0",
+        "passlib[bcrypt]>=1.7.4",
         "python-dotenv>=1.0.0",
     ],
     description="Shared core library for RootPulse Microservices (FastAPI Version)",
+    include_package_data=True,
+    package_data={
+        "rootpulse_core": ["templates/*.html"],
+    },
 )
