@@ -38,7 +38,13 @@ async def send_email(
     )
 
     fm = FastMail(conf)
-    await fm.send_message(message, template_name=template_name)
+    print(f"DEBUG Core: Sending email '{subject}' to {recipients} using template {template_name}")
+    try:
+        await fm.send_message(message, template_name=template_name)
+        print(f"DEBUG Core: Email sent successfully")
+    except Exception as e:
+        print(f"DEBUG Core ERROR: Fail to send email: {str(e)}")
+        raise e
 
 async def send_verification_email(
     email: str, 

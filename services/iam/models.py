@@ -60,7 +60,7 @@ class SocialProvider(str, enum.Enum):
 class User(BaseRootPulseModel):
     __tablename__ = 'users'
     
-    username = Column(String(150), unique=True, nullable=False)
+    username = Column(String(150), unique=True, nullable=True)
     email = Column(String(254), unique=True, nullable=False)
     phone = Column(String(20), unique=True, nullable=True)
     password_hash = Column(String(128), nullable=False)

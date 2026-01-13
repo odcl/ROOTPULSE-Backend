@@ -7,13 +7,26 @@ from uuid import UUID
 # --- 1. User Registration Schema ---
 
 class UserCreate(BaseModel):
-    username: str = Field(..., min_length=3, max_length=150, example="john_doe")
+    username: Optional[str] = Field(None, min_length=3, max_length=150, example="john_doe")
     email: EmailStr = Field(..., example="john@example.com")
     phone: Optional[str] = Field(None, example="+8801700000000")
     password: Optional[str] = Field(None, min_length=8, example="StrongPassword123!")
+    confirm_password: Optional[str] = Field(None, min_length=8, example="StrongPassword123!")
+
+    @validator('confirm_password', always=True)
+    def passwords_match(cls, v, values):
+        password = values.get('password')
+        if password is not None:
+            if v is None:
+                raise ValueError('Confirm password is required')
+            if v != password:
+                raise ValueError('Passwords do not match')
+        return v
     
     @validator('username')
     def username_alphanumeric(cls, v):
+        if v is None:
+            return v
         if not v.isalnum() and "_" not in v:
             raise ValueError('Username must be alphanumeric or contain underscores')
         return v
