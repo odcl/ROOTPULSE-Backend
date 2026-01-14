@@ -4,15 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Plane,
-  Home,
-  Heart,
+  Users,
+  Package,
   Crown,
+  ClipboardList,
+  BarChart3,
   Settings,
   LogOut,
   ChevronLeft,
   Moon,
   Sun,
+  Plane,
+  Home,
+  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,24 +37,34 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Travel & Assistance",
-    href: "/travel",
-    icon: Plane,
+    title: "Users & Members",
+    href: "/users",
+    icon: Users,
   },
   {
-    title: "Asset Guardian",
-    href: "/asset-guardian",
-    icon: Home,
+    title: "Service Catalog",
+    href: "/services",
+    icon: Package,
+    children: [
+      { title: "Travel & Assistance", href: "/services/travel", icon: Plane },
+      { title: "Asset Guardian", href: "/services/asset-guardian", icon: Home },
+      { title: "Wellness with Care", href: "/services/wellness", icon: Heart },
+    ],
   },
   {
-    title: "Wellness with Care",
-    href: "/wellness",
-    icon: Heart,
-  },
-  {
-    title: "Membership",
-    href: "/membership",
+    title: "Memberships",
+    href: "/memberships",
     icon: Crown,
+  },
+  {
+    title: "Orders & Requests",
+    href: "/orders",
+    icon: ClipboardList,
+  },
+  {
+    title: "Reports",
+    href: "/reports",
+    icon: BarChart3,
   },
   {
     title: "Settings",
@@ -61,10 +75,10 @@ const navItems = [
 
 export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   useEffect(() => {
-    // Check for dark mode preference
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
   }, []);
@@ -74,6 +88,12 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
     setIsDark(newIsDark);
     document.documentElement.classList.toggle("dark", newIsDark);
     localStorage.setItem("theme", newIsDark ? "dark" : "light");
+  };
+
+  const toggleExpand = (href: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href]
+    );
   };
 
   return (
@@ -91,9 +111,12 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
               <span className="text-lg font-bold text-white">RP</span>
             </div>
             {!isCollapsed && (
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                RootPulse
-              </span>
+              <div>
+                <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  RootPulse
+                </span>
+                <p className="text-xs text-muted-foreground">Admin Panel</p>
+              </div>
             )}
           </Link>
           <Button
@@ -120,23 +143,69 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
           {navItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
+            const isExpanded = expandedItems.includes(item.href);
+            const hasChildren = item.children && item.children.length > 0;
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-sidebar-accent",
-                  isActive
-                    ? "bg-gradient-to-r from-primary/10 to-accent/10 text-primary"
-                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
-                  isCollapsed && "justify-center px-2"
+              <div key={item.href}>
+                <Link
+                  href={hasChildren ? "#" : item.href}
+                  onClick={
+                    hasChildren ? () => toggleExpand(item.href) : undefined
+                  }
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-sidebar-accent",
+                    isActive
+                      ? "bg-gradient-to-r from-primary/10 to-accent/10 text-primary"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
+                    isCollapsed && "justify-center px-2"
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 shrink-0",
+                      isActive && "text-primary"
+                    )}
+                  />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">{item.title}</span>
+                      {hasChildren && (
+                        <ChevronLeft
+                          className={cn(
+                            "h-4 w-4 transition-transform",
+                            isExpanded ? "-rotate-90" : "rotate-180"
+                          )}
+                        />
+                      )}
+                    </>
+                  )}
+                </Link>
+
+                {/* Children */}
+                {hasChildren && isExpanded && !isCollapsed && (
+                  <div className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-3">
+                    {item.children.map((child) => {
+                      const isChildActive = pathname === child.href;
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all hover:bg-sidebar-accent",
+                            isChildActive
+                              ? "text-primary"
+                              : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                          )}
+                        >
+                          <child.icon className="h-4 w-4" />
+                          <span>{child.title}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
-              >
-                <item.icon
-                  className={cn("h-5 w-5 shrink-0", isActive && "text-primary")}
-                />
-                {!isCollapsed && <span>{item.title}</span>}
-              </Link>
+              </div>
             );
           })}
         </nav>
@@ -161,7 +230,7 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
             {!isCollapsed && <span>{isDark ? "Light Mode" : "Dark Mode"}</span>}
           </button>
 
-          {/* User Profile */}
+          {/* Admin Profile */}
           <div
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 border border-sidebar-border",
@@ -169,17 +238,19 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
             )}
           >
             <Avatar className="h-9 w-9">
-              <AvatarImage src="/avatars/user.png" alt="User" />
+              <AvatarImage src="/avatars/admin.png" alt="Admin" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm">
-                PR
+                AD
               </AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  প্রবাসী User
+                  Admin User
                 </p>
-                <Badge className="tier-gold text-xs px-1.5 py-0">Gold</Badge>
+                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                  Super Admin
+                </Badge>
               </div>
             )}
           </div>

@@ -1,14 +1,18 @@
 "use client";
 
 import {
-  Plane,
-  Home,
-  Heart,
+  Users,
   Crown,
-  Wallet,
-  Calendar,
+  ClipboardList,
+  DollarSign,
   TrendingUp,
-  ArrowRight,
+  Package,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -24,127 +28,148 @@ import { cn } from "@/lib/utils";
 
 const stats = [
   {
-    title: "Active Services",
-    value: "5",
-    change: "+2 this month",
-    icon: TrendingUp,
+    title: "Total Users",
+    value: "2,847",
+    change: "+12.5%",
+    changeType: "increase",
+    icon: Users,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+  },
+  {
+    title: "Active Members",
+    value: "1,523",
+    change: "+8.2%",
+    changeType: "increase",
+    icon: Crown,
+    color: "text-yellow-500",
+    bgColor: "bg-yellow-500/10",
+  },
+  {
+    title: "Monthly Revenue",
+    value: "৳4,25,000",
+    change: "+23.1%",
+    changeType: "increase",
+    icon: DollarSign,
     color: "text-green-500",
     bgColor: "bg-green-500/10",
   },
   {
     title: "Pending Requests",
-    value: "2",
-    change: "Awaiting approval",
-    icon: Calendar,
+    value: "47",
+    change: "-5.4%",
+    changeType: "decrease",
+    icon: ClipboardList,
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
   },
-  {
-    title: "Wallet Balance",
-    value: "৳12,500",
-    change: "Last deposit: Jan 10",
-    icon: Wallet,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-  },
-  {
-    title: "Membership",
-    value: "Gold",
-    change: "Valid until Dec 2026",
-    icon: Crown,
-    color: "text-yellow-500",
-    bgColor: "bg-yellow-500/10",
-    badge: "tier-gold",
-  },
 ];
 
-const serviceCategories = [
+const membershipBreakdown = [
+  { tier: "Platinum", count: 156, percentage: 10, color: "bg-purple-500" },
+  { tier: "Gold", count: 523, percentage: 34, color: "bg-yellow-500" },
+  { tier: "Silver", count: 844, percentage: 56, color: "bg-gray-400" },
+];
+
+const recentRequests = [
   {
-    title: "Travel & Assistance",
-    titleBn: "ভ্রমণ ও সহায়তা",
-    description: "Air tickets, accommodation, transport, visa processing",
-    icon: Plane,
-    href: "/travel",
-    color: "from-blue-500 to-cyan-500",
-    services: ["Air Ticket", "Accommodation", "Transport", "Visa"],
+    id: "REQ-001",
+    user: "Mohammed Rahim",
+    service: "Property Inspection",
+    category: "Asset Guardian",
+    status: "pending",
+    time: "5 min ago",
   },
   {
-    title: "Asset Guardian",
-    titleBn: "সম্পদ রক্ষক",
-    description: "Property monitoring, legal protection, maintenance",
-    icon: Home,
-    href: "/asset-guardian",
-    color: "from-green-500 to-emerald-500",
-    services: [
-      "Property Monitoring",
-      "Legal Protection",
-      "Maintenance",
-      "Security",
-    ],
+    id: "REQ-002",
+    user: "Fatima Begum",
+    service: "Air Ticket Booking",
+    category: "Travel",
+    status: "in_progress",
+    time: "1 hour ago",
   },
   {
-    title: "Wellness with Care",
-    titleBn: "সুস্থতা সেবা",
-    description: "Medical appointments, medicine delivery, elderly care",
-    icon: Heart,
-    href: "/wellness",
-    color: "from-pink-500 to-rose-500",
-    services: ["Specialist", "Medicine", "Elderly Care", "Fitness"],
+    id: "REQ-003",
+    user: "Karim Hassan",
+    service: "Doctor Appointment",
+    category: "Wellness",
+    status: "completed",
+    time: "2 hours ago",
+  },
+  {
+    id: "REQ-004",
+    user: "Ayesha Sultana",
+    service: "Visa Processing",
+    category: "Travel",
+    status: "pending",
+    time: "3 hours ago",
+  },
+  {
+    id: "REQ-005",
+    user: "Abdul Kadir",
+    service: "Rental Management",
+    category: "Asset Guardian",
+    status: "cancelled",
+    time: "5 hours ago",
   },
 ];
 
 const recentActivity = [
+  { action: "New user registered", user: "Jahangir Alam", time: "2 min ago" },
   {
-    title: "Property Inspection Completed",
-    description: "Monthly inspection for Dhaka property",
-    time: "2 hours ago",
-    status: "completed",
+    action: "Membership upgraded to Gold",
+    user: "Nasreen Akter",
+    time: "15 min ago",
   },
-  {
-    title: "Doctor Appointment Booked",
-    description: "With Dr. Rahman on Jan 15",
-    time: "5 hours ago",
-    status: "pending",
-  },
-  {
-    title: "Visa Application Submitted",
-    description: "UK Visa processing started",
-    time: "1 day ago",
-    status: "in_progress",
-  },
-  {
-    title: "Rent Collected",
-    description: "৳25,000 from Gulshan apartment",
-    time: "3 days ago",
-    status: "completed",
-  },
+  { action: "Service request approved", user: "Admin", time: "30 min ago" },
+  { action: "Payment received", user: "Mizanur Rahman", time: "1 hour ago" },
+  { action: "New property added", user: "Admin", time: "2 hours ago" },
 ];
 
-export default function DashboardPage() {
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "pending":
+      return <Clock className="h-4 w-4 text-orange-500" />;
+    case "in_progress":
+      return <AlertCircle className="h-4 w-4 text-blue-500" />;
+    case "completed":
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    case "cancelled":
+      return <XCircle className="h-4 w-4 text-red-500" />;
+    default:
+      return null;
+  }
+};
+
+const getStatusBadge = (status: string) => {
+  const styles: Record<string, string> = {
+    pending: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+    in_progress: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    completed: "bg-green-500/10 text-green-500 border-green-500/20",
+    cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
+  };
+  return styles[status] || "";
+};
+
+export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <Card className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-primary/20">
-        <CardContent className="py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">
-                স্বাগতম, প্রবাসী! 👋
-              </h2>
-              <p className="text-muted-foreground mt-1">
-                Welcome back! Here&apos;s an overview of your services and
-                activities.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Badge className="tier-gold text-sm px-3 py-1">
-                <Crown className="h-4 w-4 mr-1" />
-                Gold Member
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back! Here&apos;s your system overview.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">Export Report</Button>
+          <Button className="bg-gradient-to-r from-primary to-accent">
+            <Package className="h-4 w-4 mr-2" />
+            Add New Service
+          </Button>
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -156,16 +181,27 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {stat.badge ? (
-                      <Badge className={stat.badge}>{stat.value}</Badge>
+                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    {stat.changeType === "increase" ? (
+                      <ArrowUpRight className="h-4 w-4 text-green-500" />
                     ) : (
-                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <ArrowDownRight className="h-4 w-4 text-red-500" />
                     )}
+                    <span
+                      className={cn(
+                        "text-sm font-medium",
+                        stat.changeType === "increase"
+                          ? "text-green-500"
+                          : "text-red-500"
+                      )}
+                    >
+                      {stat.change}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      vs last month
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {stat.change}
-                  </p>
                 </div>
                 <div className={cn("p-3 rounded-full", stat.bgColor)}>
                   <stat.icon className={cn("h-6 w-6", stat.color)} />
@@ -176,89 +212,113 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Service Categories */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Service Categories</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {serviceCategories.map((category) => (
-            <Link key={category.href} href={category.href}>
-              <Card className="card-hover h-full cursor-pointer group overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-2",
-                      category.color
-                    )}
-                  >
-                    <category.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                    {category.title}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    {category.titleBn}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {category.description}
-                  </p>
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {category.services.map((service) => (
-                      <Badge
-                        key={service}
-                        variant="secondary"
-                        className="text-xs"
-                      >
-                        {service}
-                      </Badge>
-                    ))}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-0 h-auto group-hover:text-primary"
-                  >
-                    Explore Services
-                    <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </CardContent>
-              </Card>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Requests */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Recent Service Requests</CardTitle>
+              <CardDescription>Latest requests from members</CardDescription>
+            </div>
+            <Link href="/orders">
+              <Button variant="ghost" size="sm">
+                View All
+              </Button>
             </Link>
-          ))}
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(request.status)}
+                    <div>
+                      <p className="text-sm font-medium">{request.service}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {request.user} • {request.category}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={getStatusBadge(request.status)}
+                    >
+                      {request.status.replace("_", " ")}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {request.time}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Membership Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Membership Breakdown</CardTitle>
+            <CardDescription>Active members by tier</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {membershipBreakdown.map((tier) => (
+              <div key={tier.tier} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{tier.tier}</span>
+                  <span className="text-muted-foreground">
+                    {tier.count} members
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full", tier.color)}
+                    style={{ width: `${tier.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total Active</span>
+                <span className="text-lg font-bold">1,523</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Recent Activity */}
+      {/* Activity Log */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Activity</CardTitle>
-          <CardDescription>
-            Your latest service updates and notifications
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardDescription>System activity log</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {recentActivity.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div
-                  className={cn(
-                    "w-2 h-2 mt-2 rounded-full",
-                    activity.status === "completed" && "bg-green-500",
-                    activity.status === "pending" && "bg-orange-500",
-                    activity.status === "in_progress" && "bg-blue-500"
-                  )}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{activity.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.description}
+              <div key={index} className="flex items-center gap-4">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+                <div className="flex-1">
+                  <p className="text-sm">
+                    <span className="font-medium">{activity.action}</span>
+                    {activity.user && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        by {activity.user}
+                      </span>
+                    )}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <span className="text-xs text-muted-foreground">
                   {activity.time}
                 </span>
               </div>
