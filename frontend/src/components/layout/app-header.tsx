@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 interface AppHeaderProps {
   onMenuClick: () => void;
@@ -25,40 +28,56 @@ export function AppHeader({
   title = "Dashboard",
   subtitle,
 }: AppHeaderProps) {
-  return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
-      {/* Mobile Menu Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden"
-        onClick={onMenuClick}
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
+  const router = useRouter();
+  const { logout } = useAuth();
 
-      {/* Page Title / Breadcrumb */}
-      <div className="flex-1">
-        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        )}
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  return (
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        {/* Mobile Menu Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={onMenuClick}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Page Title / Breadcrumb */}
+        <div className="min-w-0 shrink">
+          <h1 className="text-xl font-semibold text-foreground truncate">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-sm text-muted-foreground truncate hidden lg:block">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
-        <div className="relative w-full">
+      {/* Search area - highly flexible */}
+      <div className="hidden md:flex flex-1 items-center justify-center px-4 min-w-0">
+        <div className="relative w-full max-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search services..."
-            className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
+            placeholder="Search..."
+            className="pl-9 bg-muted/50 border-0 focus-visible:ring-1 h-9 rounded-full w-full"
           />
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Language Selector */}
+
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -131,7 +150,10 @@ export function AppHeader({
               <Badge className="ml-auto tier-gold text-xs">Gold</Badge>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive cursor-pointer"
+              onClick={handleLogout}
+            >
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
