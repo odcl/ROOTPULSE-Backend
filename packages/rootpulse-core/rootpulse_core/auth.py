@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from jose import jwt, JWTError
 from fastapi import HTTPException, Security, Depends
@@ -16,9 +17,29 @@ class AuthService:
 
     def __init__(self):
         self.secret_key = os.getenv("JWT_SECRET_KEY", "your-secret-key")
-        self.algorithm = os.getenv("JWT_ALGORITHM", "RS256")
+        self.algorithm = os.getenv("JWT_ALGORITHM", "HS256")
         self.oidc_issuer = os.getenv("OIDC_ISSUER", "http://keycloak:8080/realms/rootpulse")
         self.jwks_url = f"{self.oidc_issuer}/protocol/openid-connect/certs"
+
+    def create_access_token(self, data: dict, expires_delta: Optional[float] = None) -> str:
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + timedelta(minutes=expires_delta)
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return encoded_jwt
+
+    def create_refresh_token(self, data: dict, expires_delta: Optional[float] = None) -> str:
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + timedelta(days=expires_delta)
+        else:
+            expire = datetime.utcnow() + timedelta(days=7)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return encoded_jwt
 
     async def verify_token(self, token: str) -> Dict[str, Any]:
         """

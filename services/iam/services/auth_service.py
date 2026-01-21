@@ -8,13 +8,60 @@ from datetime import datetime
 from passlib.context import CryptContext
 
 from ..models import User, UserProfile
-from ..schemas import UserCreate
+from ..schemas import UserCreate, UserLogin
 from rootpulse_core.cache import cache
 from rootpulse_core.email import send_verification_email
+from rootpulse_core.auth import auth_service as core_auth_service
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthService:
+    @staticmethod
+    async def authenticate_user(db: AsyncSession, identifier: str, password: str):
+        # Check by email or username
+        query = select(User).where(
+            (User.email == identifier) | (User.username == identifier)
+        )
+        result = await db.execute(query)
+        user = result.scalars().first()
+        
+        if not user:
+            return None
+            
+        if not pwd_context.verify(password, user.password_hash):
+            return None
+            
+        return user
+
+    @staticmethod
+    async def login(db: AsyncSession, login_in: UserLogin):
+        user = await AuthService.authenticate_user(db, login_in.identifier, login_in.password)
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username/email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Create tokens
+        # Assuming UserResponse schema compatibility or convert user object to dict/UserResponse
+        user_data = {
+            "sub": str(user.id),
+            "email": user.email,
+            "username": user.username,
+            "roles": [] # Populate if roles exist in future
+        }
+        
+        access_token = core_auth_service.create_access_token(data=user_data)
+        refresh_token = core_auth_service.create_refresh_token(data=user_data)
+        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": user 
+        }
+
     @staticmethod
     async def register_user(db: AsyncSession, user_in: UserCreate):
         # 1. Check Uniqueness
