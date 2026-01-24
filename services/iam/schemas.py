@@ -91,3 +91,15 @@ class PermissionResponse(BaseModel):
     roles: List[str]
     permissions: List[str]
     menu: List[MenuItem]
+
+# --- 6. Auth Schemas ---
+
+class UserLogin(BaseModel):
+    identifier: str = Field(..., example="john@example.com", description="Email or Username")
+    password: str = Field(..., example="StrongPassword123!")
+
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    user: UserResponse

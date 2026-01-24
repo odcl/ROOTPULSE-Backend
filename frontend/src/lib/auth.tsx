@@ -14,13 +14,15 @@ import {
   getLocalStorage,
   setLocalStorage,
   removeLocalStorage,
+  setCookie,
+  removeCookie,
 } from "@/lib/utils";
 
 interface AuthContextType extends AuthState {
   login: (
     identifier: string,
     password: string,
-    rememberMe?: boolean
+    rememberMe?: boolean,
   ) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -82,11 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (rememberMe) {
           setLocalStorage(TOKEN_KEY, access_token);
           setLocalStorage(USER_KEY, userData);
+          setCookie(TOKEN_KEY, access_token, 30); // 30 days
         } else {
           // Store in sessionStorage for session-only persistence
           if (typeof window !== "undefined") {
             sessionStorage.setItem(TOKEN_KEY, access_token);
             sessionStorage.setItem(USER_KEY, JSON.stringify(userData));
+            setCookie(TOKEN_KEY, access_token, 1); // 1 day fallback
           }
         }
 
@@ -104,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    []
+    [],
   );
 
   const register = useCallback(async (data: RegisterData) => {
@@ -126,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.setToken(access_token);
       setLocalStorage(TOKEN_KEY, access_token);
       setLocalStorage(USER_KEY, userData);
+      setCookie(TOKEN_KEY, access_token, 30);
 
       setState({
         user: userData,
@@ -146,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.setToken(null);
     removeLocalStorage(TOKEN_KEY);
     removeLocalStorage(USER_KEY);
+    removeCookie(TOKEN_KEY);
 
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(TOKEN_KEY);
